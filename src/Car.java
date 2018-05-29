@@ -1,3 +1,7 @@
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class Car implements Runnable {
     private static int CARS_COUNT;
     static {
@@ -6,17 +10,23 @@ public class Car implements Runnable {
     private Race race;
     private int speed;
     private String name;
+    private CyclicBarrier cyclicBarrier;
+    private CountDownLatch countDownLatch;
+
+    private static AtomicInteger ai = new AtomicInteger(0);
     public String getName() {
         return name;
     }
     public int getSpeed() {
         return speed;
     }
-    public Car(Race race, int speed) {
+    public Car(Race race, int speed, CyclicBarrier cyclicBarrier, CountDownLatch countDownLatch) {
         this.race = race;
         this.speed = speed;
         CARS_COUNT++;
         this.name = "Участник #" + CARS_COUNT;
+        this.cyclicBarrier = cyclicBarrier;
+        this.countDownLatch = countDownLatch;
     }
     @Override
     public void run() {
@@ -24,11 +34,21 @@ public class Car implements Runnable {
             System.out.println(this.name + " готовится");
             Thread.sleep(500 + (int)(Math.random() * 800));
             System.out.println(this.name + " готов");
+            cyclicBarrier.await();
+            cyclicBarrier.await();
         } catch (Exception e) {
             e.printStackTrace();
         }
         for (int i = 0; i < race.getStages().size(); i++) {
             race.getStages().get(i).go(this);
+        }
+        countDownLatch.countDown();
+
+        // Сам сделал через монитор, а тут нашел еще такой вариант
+        // Но, честно говоря, не до конца разобрался
+        // Буду очень благодарен, если как-нибудь по простому объясните, почему оно срабатывает ?
+        if (ai.incrementAndGet() == 1){
+            System.out.println(name + " - WIN");
         }
     }
 }
